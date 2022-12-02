@@ -1,0 +1,34 @@
+
+
+defproc kmac (chan(int)? A; chan(int)? K; chan(bool)? C, chan(int)? direction, chan(int)! outloc[4], chan(int)! out ){
+   
+   chan(int) mul, x, yc, y, zero;
+   
+   dataflow {
+        A * K -> mul;
+        x + mul -> out;
+        out ->[4,0] y;
+        {C} y -> yc, *;
+        {C} yc, zero -> x;
+        0 -> zero;
+        {direction} out -> *, outloc[0], outloc[1], outloc[2], outloc[3];
+    }
+}
+defproc kmacArrayControlCircuit(chan(bool)! C, chan(int)! direction ){
+    dataflow{
+        direction ->[4,0] direction;
+        {C} 1,0 -> [4,0] C;
+    }
+}
+
+template<pint N,pint K> defproc kMACArray(chan(int)? A[N][K], chan(int)? K, chan(int)? out[N][K]){
+    kmac macarray[N][K];
+    kmacArrayControlCircuit kacc;
+
+   ( i : N : ( j : K :  macarray[i][j].A = A[i][j];
+                        macarray[i][j].C = kacc.C;
+                        macarray[i][j].direction = kacc.direction;
+                        macarray[i][j].K = K;
+                        macarray[i][j].out = out[i][j];
+    ); )
+}
